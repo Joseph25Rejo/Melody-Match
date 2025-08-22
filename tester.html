@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Dating App - API Tester</title>
+</head>
+<body>
+    <h1>Music Dating App - API Tester</h1>
+    
+    <!-- Authentication Section -->
+    <div>
+        <h2>Authentication</h2>
+        <button onclick="initiateSignup()">Signup with Spotify</button>
+        <button onclick="initiateLogin()">Login with Spotify</button>
+        <br><br>
+        <label>JWT Token:</label>
+        <input type="text" id="jwtToken" placeholder="Paste JWT token here" style="width: 400px;">
+        <button onclick="saveToken()">Save Token</button>
+        <br><br>
+        <label>Current User ID:</label>
+        <input type="text" id="currentUserId" placeholder="Your user ID" style="width: 200px;">
+    </div>
+
+    <hr>
+
+    <!-- User Profile Section -->
+    <div>
+        <h2>User Profile</h2>
+        <label>User ID:</label>
+        <input type="text" id="profileUserId" placeholder="User ID">
+        <button onclick="getUserProfile()">Get Profile</button>
+        <br><br>
+        
+        <h3>Update Profile</h3>
+        <label>Bio:</label><br>
+        <textarea id="bio" rows="3" cols="50" placeholder="Your bio"></textarea><br>
+        <label>Age:</label>
+        <input type="number" id="age" placeholder="Age"><br>
+        <label>Location:</label>
+        <input type="text" id="location" placeholder="Location"><br>
+        <label>Interests (comma-separated):</label>
+        <input type="text" id="interests" placeholder="music, movies, travel"><br>
+        <button onclick="updateProfile()">Update Profile</button>
+    </div>
+
+    <hr>
+
+    <!-- Music Data Section -->
+    <div>
+        <h2>Music Data</h2>
+        <label>User ID:</label>
+        <input type="text" id="musicUserId" placeholder="User ID">
+        <button onclick="getUserMusic()">Get Music Data</button>
+        <button onclick="updateUserMusic()">Update Music Data</button>
+    </div>
+
+    <hr>
+
+    <!-- Matching Section -->
+    <div>
+        <h2>Matching</h2>
+        <label>User ID:</label>
+        <input type="text" id="matchUserId" placeholder="User ID">
+        <button onclick="getPotentialMatches()">Get Potential Matches</button>
+        <br><br>
+        
+        <h3>Send First Song</h3>
+        <label>Other User ID:</label>
+        <input type="text" id="otherUserId" placeholder="Other user ID"><br>
+        <label>Song ID:</label>
+        <input type="text" id="songId" placeholder="Spotify track ID"><br>
+        <label>Message:</label>
+        <input type="text" id="firstSongMessage" placeholder="Optional message"><br>
+        <button onclick="sendFirstSong()">Send First Song</button>
+    </div>
+
+    <hr>
+
+    <!-- Match Management Section -->
+    <div>
+        <h2>Match Management</h2>
+        <label>Match ID:</label>
+        <input type="text" id="matchId" placeholder="Match ID">
+        <button onclick="getCompatibilityScore()">Get Score</button>
+        <button onclick="trackInteraction()">Track Interaction</button>
+        <button onclick="unlockMatch()">Unlock Profile</button>
+        <br><br>
+        
+        <h3>Playlist Management</h3>
+        <button onclick="getSharedPlaylist()">Get Shared Playlist</button>
+        <br>
+        <label>Track ID to Add:</label>
+        <input type="text" id="playlistTrackId" placeholder="Spotify track ID">
+        <button onclick="addToPlaylist()">Add to Playlist</button>
+    </div>
+
+    <hr>
+
+    <!-- User Matches Section -->
+    <div>
+        <h2>User Matches</h2>
+        <label>User ID:</label>
+        <input type="text" id="userMatchesId" placeholder="User ID">
+        <button onclick="getUserMatches()">Get All Matches</button>
+    </div>
+
+    <hr>
+
+    <!-- Search Section -->
+    <div>
+        <h2>Search Tracks</h2>
+        <label>Search Query:</label>
+        <input type="text" id="searchQuery" placeholder="Song or artist name">
+        <label>Limit:</label>
+        <input type="number" id="searchLimit" value="10" min="1" max="50">
+        <button onclick="searchTracks()">Search Tracks</button>
+    </div>
+
+    <hr>
+
+    <!-- Health Check -->
+    <div>
+        <h2>Health Check</h2>
+        <button onclick="healthCheck()">Check Server Health</button>
+    </div>
+
+    <hr>
+
+    <!-- Response Display -->
+    <div>
+        <h2>Response</h2>
+        <textarea id="response" rows="20" cols="100" readonly></textarea>
+        <br>
+        <button onclick="clearResponse()">Clear Response</button>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:5000';
+        let currentToken = '';
+
+        function saveToken() {
+            currentToken = document.getElementById('jwtToken').value;
+            displayResponse('Token saved locally');
+        }
+
+        function displayResponse(data) {
+            const responseArea = document.getElementById('response');
+            const timestamp = new Date().toLocaleTimeString();
+            responseArea.value = `[${timestamp}]\n${JSON.stringify(data, null, 2)}\n\n${responseArea.value}`;
+        }
+
+        function clearResponse() {
+            document.getElementById('response').value = '';
+        }
+
+        async function makeRequest(url, options = {}) {
+            try {
+                const defaultHeaders = {
+                    'Content-Type': 'application/json',
+                };
+
+                if (currentToken) {
+                    defaultHeaders['Authorization'] = `Bearer ${currentToken}`;
+                }
+
+                const response = await fetch(url, {
+                    ...options,
+                    headers: { ...defaultHeaders, ...options.headers }
+                });
+
+                const data = await response.json();
+                
+                displayResponse({
+                    status: response.status,
+                    statusText: response.statusText,
+                    url: url,
+                    method: options.method || 'GET',
+                    data: data
+                });
+
+                return data;
+            } catch (error) {
+                displayResponse({
+                    error: error.message,
+                    url: url
+                });
+            }
+        }
+
+        // Authentication Functions
+        async function initiateSignup() {
+            const data = await makeRequest(`${API_BASE}/signup`);
+            if (data && data.auth_url) {
+                window.open(data.auth_url, '_blank');
+            }
+        }
+
+        async function initiateLogin() {
+            const data = await makeRequest(`${API_BASE}/login`);
+            if (data && data.auth_url) {
+                window.open(data.auth_url, '_blank');
+            }
+        }
+
+        // User Profile Functions
+        async function getUserProfile() {
+            const userId = document.getElementById('profileUserId').value;
+            if (!userId) {
+                alert('Please enter a user ID');
+                return;
+            }
+            await makeRequest(`${API_BASE}/user/${userId}`);
+        }
+
+        async function updateProfile() {
+            const userId = document.getElementById('currentUserId').value;
+            if (!userId) {
+                alert('Please enter your user ID');
+                return;
+            }
+
+            const interests = document.getElementById('interests').value.split(',').map(i => i.trim());
+            const profileData = {
+                bio: document.getElementById('bio').value,
+                age: parseInt(document.getElementById('age').value) || null,
+                location: document.getElementById('location').value,
+                interests: interests.filter(i => i.length > 0)
+            };
+
+            await makeRequest(`${API_BASE}/user/${userId}`, {
+                method: 'PUT',
+                body: JSON.stringify(profileData)
+            });
+        }
+
+        // Music Data Functions
+        async function getUserMusic() {
+            const userId = document.getElementById('musicUserId').value;
+            if (!userId) {
+                alert('Please enter a user ID');
+                return;
+            }
+            await makeRequest(`${API_BASE}/user/${userId}/music`);
+        }
+
+        async function updateUserMusic() {
+            const userId = document.getElementById('musicUserId').value;
+            if (!userId) {
+                alert('Please enter a user ID');
+                return;
+            }
+            await makeRequest(`${API_BASE}/user/${userId}/music`, {
+                method: 'PUT'
+            });
+        }
+
+        // Matching Functions
+        async function getPotentialMatches() {
+            const userId = document.getElementById('matchUserId').value;
+            if (!userId) {
+                alert('Please enter a user ID');
+                return;
+            }
+            await makeRequest(`${API_BASE}/matches/${userId}`);
+        }
+
+        async function sendFirstSong() {
+            const otherUserId = document.getElementById('otherUserId').value;
+            const songId = document.getElementById('songId').value;
+            const message = document.getElementById('firstSongMessage').value;
+
+            if (!otherUserId || !songId) {
+                alert('Please enter other user ID and song ID');
+                return;
+            }
+
+            await makeRequest(`${API_BASE}/matches/first-song`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    other_user_id: otherUserId,
+                    song_id: songId,
+                    message: message
+                })
+            });
+        }
+
+        // Match Management Functions
+        async function getCompatibilityScore() {
+            const matchId = document.getElementById('matchId').value;
+            if (!matchId) {
+                alert('Please enter a match ID');
+                return;
+            }
+            await makeRequest(`${API_BASE}/matches/${matchId}/score`);
+        }
+
+        async function trackInteraction() {
+            const matchId = document.getElementById('matchId').value;
+            if (!matchId) {
+                alert('Please enter a match ID');
+                return;
+            }
+            await makeRequest(`${API_BASE}/matches/${matchId}/interact`, {
+                method: 'POST',
+                body: JSON.stringify({ type: 'general' })
+            });
+        }
+
+        async function unlockMatch() {
+            const matchId = document.getElementById('matchId').value;
+            if (!matchId) {
+                alert('Please enter a match ID');
+                return;
+            }
+            await makeRequest(`${API_BASE}/matches/${matchId}/unlock`, {
+                method: 'POST'
+            });
+        }
+
+        async function getSharedPlaylist() {
+            const matchId = document.getElementById('matchId').value;
+            if (!matchId) {
+                alert('Please enter a match ID');
+                return;
+            }
+            await makeRequest(`${API_BASE}/matches/${matchId}/playlist`);
+        }
+
+        async function addToPlaylist() {
+            const matchId = document.getElementById('matchId').value;
+            const trackId = document.getElementById('playlistTrackId').value;
+            
+            if (!matchId || !trackId) {
+                alert('Please enter match ID and track ID');
+                return;
+            }
+
+            await makeRequest(`${API_BASE}/matches/${matchId}/playlist`, {
+                method: 'POST',
+                body: JSON.stringify({ track_id: trackId })
+            });
+        }
+
+        // User Matches Function
+        async function getUserMatches() {
+            const userId = document.getElementById('userMatchesId').value;
+            if (!userId) {
+                alert('Please enter a user ID');
+                return;
+            }
+            await makeRequest(`${API_BASE}/user/${userId}/matches`);
+        }
+
+        // Search Function
+        async function searchTracks() {
+            const query = document.getElementById('searchQuery').value;
+            const limit = document.getElementById('searchLimit').value;
+            
+            if (!query) {
+                alert('Please enter a search query');
+                return;
+            }
+
+            await makeRequest(`${API_BASE}/search/tracks?q=${encodeURIComponent(query)}&limit=${limit}`);
+        }
+
+        // Health Check Function
+        async function healthCheck() {
+            await makeRequest(`${API_BASE}/health`);
+        }
+
+        // Load saved token on page load
+        window.onload = function() {
+            const savedToken = localStorage.getItem('jwt_token');
+            if (savedToken) {
+                document.getElementById('jwtToken').value = savedToken;
+                currentToken = savedToken;
+            }
+
+            const savedUserId = localStorage.getItem('current_user_id');
+            if (savedUserId) {
+                document.getElementById('currentUserId').value = savedUserId;
+            }
+        };
+
+        // Save token and user ID to localStorage when they change
+        document.getElementById('jwtToken').addEventListener('input', function() {
+            localStorage.setItem('jwt_token', this.value);
+        });
+
+        document.getElementById('currentUserId').addEventListener('input', function() {
+            localStorage.setItem('current_user_id', this.value);
+        });
+    </script>
+</body>
+</html>

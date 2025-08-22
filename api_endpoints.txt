@@ -1,0 +1,480 @@
+# Music Dating App - API Documentation
+
+Base URL: `http://127.0.0.1:5000`
+
+**Important:** Due to Spotify's security requirements, use `127.0.0.1` instead of `localhost` for all URLs.
+
+## Authentication
+
+### 1. Signup with Spotify
+**Endpoint:** `GET /signup`
+
+```bash
+curl -X GET "http://127.0.0.1:5000/signup"
+```
+
+**Response:**
+```json
+{
+  "auth_url": "https://accounts.spotify.com/authorize?client_id=...&response_type=code&redirect_uri=..."
+}
+```
+
+### 2. Login with Spotify
+**Endpoint:** `GET /login`
+
+```bash
+curl -X GET "http://127.0.0.1:5000/login"
+```
+
+**Response:**
+```json
+{
+  "auth_url": "https://accounts.spotify.com/authorize?client_id=...&response_type=code&redirect_uri=..."
+}
+```
+
+### 3. OAuth Callback (handled automatically)
+**Endpoint:** `GET /callback?code=<auth_code>`
+
+```bash
+curl -X GET "http://127.0.0.1:5000/callback?code=AQD1K2..."
+```
+
+**Response:**
+```json
+{
+  "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "user_id": "507f1f77bcf86cd799439011",
+  "message": "Authentication successful"
+}
+```
+
+## User Profile Management
+
+### 4. Get User Profile
+**Endpoint:** `GET /user/<user_id>`
+
+```bash
+curl -X GET "http://127.0.0.1:5000/user/507f1f77bcf86cd799439011" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Response (Own Profile):**
+```json
+{
+  "user_id": "507f1f77bcf86cd799439011",
+  "username": "john_doe",
+  "profile_image": "https://i.scdn.co/image/...",
+  "bio": "Music lover and coffee enthusiast",
+  "age": 25,
+  "location": "New York, NY",
+  "interests": ["indie rock", "jazz", "hiking"]
+}
+```
+
+**Response (Other User - Locked):**
+```json
+{
+  "user_id": "507f1f77bcf86cd799439012",
+  "username": "jane_smith",
+  "profile_image": "https://i.scdn.co/image/...",
+  "unlocked": false
+}
+```
+
+**Response (Other User - Unlocked):**
+```json
+{
+  "user_id": "507f1f77bcf86cd799439012",
+  "username": "jane_smith",
+  "profile_image": "https://i.scdn.co/image/...",
+  "bio": "Classical music and modern art",
+  "age": 28,
+  "location": "Los Angeles, CA",
+  "interests": ["classical", "art", "yoga"],
+  "unlocked": true
+}
+```
+
+### 5. Update User Profile
+**Endpoint:** `PUT /user/<user_id>`
+
+```bash
+curl -X PUT "http://127.0.0.1:5000/user/507f1f77bcf86cd799439011" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bio": "Updated bio here",
+    "age": 26,
+    "location": "San Francisco, CA",
+    "interests": ["rock", "pop", "traveling"]
+  }'
+```
+
+**Response:**
+```json
+{
+  "message": "Profile updated successfully"
+}
+```
+
+## Music Data Management
+
+### 6. Get User Music Data
+**Endpoint:** `GET /user/<user_id>/music`
+
+```bash
+curl -X GET "http://localhost:5000/user/507f1f77bcf86cd799439011/music" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Response:**
+```json
+{
+  "user_id": "507f1f77bcf86cd799439011",
+  "top_tracks": [
+    {
+      "id": "4iV5W9uYEdYUVa79Axb7Rh",
+      "name": "Watermelon Sugar",
+      "artists": [{"name": "Harry Styles"}],
+      "popularity": 85
+    }
+  ],
+  "top_artists": [
+    {
+      "id": "6KImCVD70vtIoJWnq6nGn3",
+      "name": "Harry Styles",
+      "genres": ["pop", "rock"]
+    }
+  ],
+  "audio_features": [
+    {
+      "danceability": 0.548,
+      "energy": 0.816,
+      "valence": 0.557,
+      "acousticness": 0.122
+    }
+  ],
+  "last_updated": "2025-08-22T10:30:00.000Z"
+}
+```
+
+### 7. Update User Music Data
+**Endpoint:** `PUT /user/<user_id>/music`
+
+```bash
+curl -X PUT "http://localhost:5000/user/507f1f77bcf86cd799439011/music" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Response:**
+```json
+{
+  "message": "Music data updated successfully"
+}
+```
+
+## Matching System
+
+### 8. Get Potential Matches
+**Endpoint:** `GET /matches/<user_id>`
+
+```bash
+curl -X GET "http://localhost:5000/matches/507f1f77bcf86cd799439011" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Response:**
+```json
+{
+  "matches": [
+    {
+      "user_id": "507f1f77bcf86cd799439012",
+      "username": "jane_smith",
+      "profile_image": "https://i.scdn.co/image/...",
+      "compatibility_score": 87
+    },
+    {
+      "user_id": "507f1f77bcf86cd799439013",
+      "username": "mike_jones",
+      "profile_image": "https://i.scdn.co/image/...",
+      "compatibility_score": 74
+    }
+  ]
+}
+```
+
+### 9. Send First Song (Create Match)
+**Endpoint:** `POST /matches/<match_id>/first-song`
+
+```bash
+curl -X POST "http://localhost:5000/matches/first-song/first-song" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "other_user_id": "507f1f77bcf86cd799439012",
+    "song_id": "4iV5W9uYEdYUVa79Axb7Rh",
+    "message": "This song reminds me of summer vibes!"
+  }'
+```
+
+**Response:**
+```json
+{
+  "match_id": "507f1f77bcf86cd799439020",
+  "message": "First song sent successfully"
+}
+```
+
+## Match Management
+
+### 10. Get Compatibility Score
+**Endpoint:** `GET /matches/<match_id>/score`
+
+```bash
+curl -X GET "http://localhost:5000/matches/507f1f77bcf86cd799439020/score" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Response:**
+```json
+{
+  "match_score": 87,
+  "interaction_count": 5
+}
+```
+
+### 11. Track Interaction
+**Endpoint:** `POST /matches/<match_id>/interact`
+
+```bash
+curl -X POST "http://localhost:5000/matches/507f1f77bcf86cd799439020/interact" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "message"
+  }'
+```
+
+**Response:**
+```json
+{
+  "message": "Interaction tracked",
+  "interaction_count": 6,
+  "can_unlock": false
+}
+```
+
+### 12. Unlock Match Profile
+**Endpoint:** `POST /matches/<match_id>/unlock`
+
+```bash
+curl -X POST "http://localhost:5000/matches/507f1f77bcf86cd799439020/unlock" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Response (Success):**
+```json
+{
+  "message": "Profile unlocked successfully"
+}
+```
+
+**Response (Insufficient Interactions):**
+```json
+{
+  "error": "Insufficient interactions to unlock profile",
+  "required": 10,
+  "current": 6
+}
+```
+
+## Playlist Management
+
+### 13. Get Shared Playlist
+**Endpoint:** `GET /matches/<match_id>/playlist`
+
+```bash
+curl -X GET "http://localhost:5000/matches/507f1f77bcf86cd799439020/playlist" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Response:**
+```json
+{
+  "playlist_id": "37i9dQZF1DXcBWIGoYBM5M",
+  "tracks": [
+    {
+      "track": {
+        "id": "4iV5W9uYEdYUVa79Axb7Rh",
+        "name": "Watermelon Sugar",
+        "artists": [{"name": "Harry Styles"}]
+      },
+      "added_at": "2025-08-22T10:30:00Z"
+    }
+  ]
+}
+```
+
+### 14. Add Song to Shared Playlist
+**Endpoint:** `POST /matches/<match_id>/playlist`
+
+```bash
+curl -X POST "http://localhost:5000/matches/507f1f77bcf86cd799439020/playlist" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "track_id": "1Je1IMUlBXcx1Fz0WE7oPT"
+  }'
+```
+
+**Response:**
+```json
+{
+  "message": "Song added to shared playlist"
+}
+```
+
+## User Matches
+
+### 15. Get All User Matches
+**Endpoint:** `GET /user/<user_id>/matches`
+
+```bash
+curl -X GET "http://localhost:5000/user/507f1f77bcf86cd799439011/matches" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Response:**
+```json
+{
+  "matches": [
+    {
+      "match_id": "507f1f77bcf86cd799439020",
+      "other_user": {
+        "user_id": "507f1f77bcf86cd799439012",
+        "username": "jane_smith",
+        "profile_image": "https://i.scdn.co/image/..."
+      },
+      "match_score": 87,
+      "interaction_count": 12,
+      "unlocked": true,
+      "created_at": "2025-08-22T10:00:00.000Z",
+      "last_interaction": "2025-08-22T15:30:00.000Z"
+    }
+  ]
+}
+```
+
+## Search
+
+### 16. Search Tracks
+**Endpoint:** `GET /search/tracks?q=<query>&limit=<limit>`
+
+```bash
+curl -X GET "http://localhost:5000/search/tracks?q=watermelon%20sugar&limit=10" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Response:**
+```json
+{
+  "tracks": [
+    {
+      "id": "4iV5W9uYEdYUVa79Axb7Rh",
+      "name": "Watermelon Sugar",
+      "artists": [
+        {
+          "id": "6KImCVD70vtIoJWnq6nGn3",
+          "name": "Harry Styles"
+        }
+      ],
+      "album": {
+        "id": "7xV2TzoaVc0ycW7fwBwAml",
+        "name": "Fine Line"
+      },
+      "preview_url": "https://p.scdn.co/mp3-preview/...",
+      "popularity": 85
+    }
+  ]
+}
+```
+
+## Health Check
+
+### 17. Health Check
+**Endpoint:** `GET /health`
+
+```bash
+curl -X GET "http://localhost:5000/health"
+```
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-08-22T15:45:00.000Z",
+  "services": {
+    "mongodb": "connected",
+    "spotify": "configured"
+  }
+}
+```
+
+## Error Responses
+
+### Common Error Responses:
+
+**401 Unauthorized:**
+```json
+{
+  "error": "Token is missing"
+}
+```
+
+**403 Forbidden:**
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+**404 Not Found:**
+```json
+{
+  "error": "User not found"
+}
+```
+
+**500 Internal Server Error:**
+```json
+{
+  "error": "Internal server error"
+}
+```
+
+## Authentication Flow
+
+1. **Call `/signup` or `/login`** to get Spotify authorization URL
+2. **Redirect user to the auth_url** (opens Spotify login)
+3. **User authorizes and gets redirected to `/callback`** with auth code
+4. **Server exchanges code for tokens and returns JWT**
+5. **Use JWT token in Authorization header** for all subsequent requests
+
+## Progressive Reveal System
+
+- **Initial Match:** Only username and profile image visible
+- **After 10+ Interactions:** Full profile unlocked (bio, age, location, interests)
+- **Track interactions** using `/matches/<match_id>/interact`
+- **Check unlock status** with `/matches/<match_id>/unlock`
+
+## Required Environment Variables
+
+```
+MONGO_URI=mongodb://localhost:27017/
+SPOTIFY_CLIENT_ID=your_spotify_client_id
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+SPOTIFY_REDIRECT_URI=http://localhost:5000/callback
+JWT_SECRET_KEY=your_secret_key
+```
